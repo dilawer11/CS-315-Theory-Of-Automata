@@ -66,7 +66,6 @@ def p_statements_empty(p):
 def p_stmt_console(p):
     'stmt : CONSOLE LPARENT optparams RPARENT'
     p[0] = ("console", p[3])
-
 def p_stmt_assignment(p):
     'stmt : IDENTIFIER ASSIGN exp'
     p[0] = ('assign', p[1], p[3])
@@ -78,6 +77,14 @@ def p_stmt_init_assign(p):
     p[0] = ('init', p[2], p[1], p[4])
 def p_stmt_init_list(p):
     'stmt : TYPE IDENTIFIER ASSIGN LSQBRACE optparams RSQBRACE'
+    p[0] = ('init-list', p[2], p[1], p[5])
+def p_exp_list_direct(p):
+    'exp : IDENTIFIER LSQBRACE optparams RSQBRACE'
+    p[0] = ('func', 'index', p[1], p[3])
+def p_exp_list_func(p):
+    'exp : IDENTIFIER DOT LISTFUNC LPARENT optparams RPARENT'
+    p[0] = ('func', p[3], p[1], p[5])
+
 # Expressions
 def p_stmt_exp(p):
     'stmt : exp'

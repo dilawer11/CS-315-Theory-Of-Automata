@@ -39,6 +39,7 @@ tokens = (
     'TYPE', # int, string, double, char, bool
     'IDENTIFIER', # variable name
     'SEMICOLON', # end of a line
+    'LISTFUNC', # Function Names
 )
 
 t_COMMA = r','
@@ -68,6 +69,9 @@ def t_NEWLINE(t):
     t.lexer.lineno += 1
 def t_TYPE(t):
     r'int|string|bool|char|double'
+    return t
+def t_LISTFUNC(t):
+    r'pop|push|index|slice'
     return t
 def t_BOOL(t):
     r'true|false'

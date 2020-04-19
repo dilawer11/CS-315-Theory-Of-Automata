@@ -59,6 +59,43 @@ class Interpreter:
                 var_env[identifier]['value'] = int(value['value'])
             else:
                 raise Exception(f"TypeError: Cannot set type '{var_env[identifier]['type']}' with type '{value['type']}'")
+    def lst_push(self, identifier, value, env):
+        var_env = self.find_env(env, identifier)
+        if var_env is not None and var_env[identifier]['type'] == 'list':
+            ltype = var_env[identifier]['ltype']
+            if ltype == value['type']:
+                var_env[identifier]['value'].append(value['value'])
+            else:
+                raise Exception(f"List type {ltype} cannot contain type {value['type']}")
+        else:
+            raise Exception(f"Cannot push into type: {var_env[identifier]['type']}")
+    def lst_pop(self, identifier, value, env):
+        if value['type'] != 'int':
+            raise Exception(f"pop must be passed an 'int' argument was passed '{value['type']}'")
+        var_env = self.find_env(env, identifier)
+        if var_env is not None and var_env[identifier]['type'] == "list":
+            val = var_env[identifier]['value'][value['value']]
+            var_env[identifier]['value'].pop(value['value'])
+            return {'value': val, 'type': var_env[identifier]['ltype']}
+        else:
+            raise Exception(f"Cannot pop from type: {var_env[identifier]['type']}")
+    def lst_slice(self, identifier, start_val, end_val, env):
+        if start_val['type'] == 'int' and end_val['type'] == 'int':
+            var_env = self.find_env(env, identifier)
+            s_i = start_val['value']
+            e_i = end_val['value']
+            if var_env is not None and var_env[identifier]['type'] == 'list':
+                lst = var_env[identifier]['value']
+                ltype = var_env[identifier]['ltype']
+                if s_i >= len(lst) or e_i > len(lst):
+                    raise Exception("List Index Out of Bounds")
+                else:
+                    return {'value': lst[start_val['value']:end_val['value']], 'type': 'list', 'ltype': ltype} 
+        else:
+            raise Exception(f"ValueError: 'start' and 'end' indices must be type 'int'")
+    def lst_index(self, identifier, index, env):
+        result = self.lst_slice(identifier, index, {'value': index['value'] + 1, 'type': index['type']}, env)
+        return {'value': result['value'][0], 'type': result['ltype']}
     def eval_stmt(self, tree, env):
         stmttype = tree[0]
         if stmttype == "console":
@@ -79,7 +116,15 @@ class Interpreter:
             if tree[3] is not None:
                 result = self.eval_exp(tree[3], env)
                 self.env_update(env, identifier, result)
-
+        elif stmttype == "init-list":
+            identifier = tree[1]
+            dtype = tree[2]
+            params = tree[3]
+            exps = []
+            self.env_declare(env, identifier, {'value': [], 'type': 'list', 'ltype': dtype})
+            for param in params:
+                exp = self.eval_exp(param, env)
+                self.lst_push(identifier, exp, env)
         elif stmttype == "exp":
             result = self.eval_exp(tree[1], env)
         elif stmttype == "assign":
@@ -186,6 +231,35 @@ class Interpreter:
         result = None
         if nodetype == "exp":
             result = self.eval_exp(tree[1], env)
+        elif nodetype == 'func':
+            fname = tree[1]
+            identifier = tree[2]
+            params = tree[3]
+            if fname == 'index':
+                expected_params = 1
+                if len(params) != expected_params:
+                    raise Exception(f"Index Expected {expected_params} Param got {len(params)}")
+                index_val = self.eval_exp(params[0], env)
+                result = self.lst_index(identifier, index_val, env)
+            elif fname == "pop":
+                expected_params = 1
+                if len(params) != expected_params:
+                    raise Exception(f"Index Expected {expected_params} Param got {len(params)}")
+                index_val = self.eval_exp(params[0], env)
+                result = self.lst_pop(identifier, index_val, env)
+            elif fname == "slice":
+                expected_params = 2
+                if len(params) != expected_params:
+                    raise Exception(f"Index Expected {expected_params} Param got {len(params)}")
+                start_val = self.eval_exp(params[0], env)
+                end_val = self.eval_exp(params[1], env)
+                result = self.lst_slice(identifier, start_val, end_val, env)
+            elif fname == "push":
+                expected_params = 1
+                if len(params) != expected_params:
+                    raise Exception(f"Index Expected {expected_params} Param got {len(params)}")
+                val = self.eval_exp(params[0], env)
+                result = self.lst_push(identifier, val, env)
         elif nodetype == "identifier":
             result = self.env_lookup(env, tree[1])
         elif nodetype == "double":
@@ -352,7 +426,9 @@ def run(code, print_tokens=False, print_tree=False):
 def main(filename, mode):
     with open(filename, 'r') as f:
         data = f.read()
-    run(data)
+    run(data, print_tokens=True, print_tree=True)
+    # run(data)
+
 if __name__ == "__main__":
     # You can compile the program using python3 compiler.py [FILENAME] [OPTIONS]
     # FILENAME is the Code file for the language

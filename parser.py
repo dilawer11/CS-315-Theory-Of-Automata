@@ -5,13 +5,14 @@ from tokenizer import tokens
 start = 'da'
 
 precedence = (
-        ('left', 'OR'),
-        ('left', 'AND'),
-        ('left', 'EQ'),
-        ('left', 'LT', 'LE', 'GT', 'GE'),
-        ('left', 'PLUS', 'MINUS'),
-        ('left', 'MULTIPLY', 'DIVIDE'),
-        ('right', 'NOT'),
+    ('left', 'OR'),
+    ('left', 'AND'),
+    ('left', 'EQ'),
+    ('left', 'LT', 'LE', 'GT', 'GE'),
+    ('left', 'PLUS', 'MINUS'),
+    ('left', 'MULTIPLY', 'DIVIDE'),
+    ('left', 'MOD', 'POWER'),
+    ('right', 'NOT'),
 )
 
 def p_da(p):
@@ -21,8 +22,23 @@ def p_da_empty(p):
     'da : '
     p[0] = []
 def p_element_statement(p):
-    'element : stmt NEWLINE'
+    'element : stmt SEMICOLON'
     p[0] = ('stmt', p[1])
+def p_element_if_block(p):
+    'element : IF exp compoundstmt ef el'
+    p[0] = ('if', p[2], p[3], p[4], p[5])
+def p_ef(p):
+    'ef : EF exp compoundstmt ef'
+    p[0] = [('ef', p[2], p[3])] + p[4]
+def p_ef_empty(p):
+    'ef : '
+    p[0] = []
+def p_stmt_el(p):
+    'el : EL compoundstmt'
+    p[0] = ('el', p[2])
+def p_stmd_el_empty(p):
+    'el : '
+    p[0] = []
 def p_optparams(p):
     'optparams : params'
     p[0] = p[1]
@@ -38,36 +54,16 @@ def p_params_exp(p):
 def p_compoundstmt(p):
     'compoundstmt : LCURLY statements RCURLY'
     p[0] = p[2]
-def p_optline(p):
-    'optline : NEWLINE optline'
-    p[0] = []
-def p_optline_empty(p):
-    'optline : '
-    p[0] = []
 def p_statements(p):
-    'statements : optline stmt NEWLINE statements'
-    p[0] = [ ("stmt",p[2]) ]  + p[4]
+    'statements : stmt SEMICOLON statements'
+    p[0] = [ ("stmt",p[1]) ]  + p[3]
 def p_statements_empty(p):
     'statements : '
     p[0] = []
 def p_stmt_console(p):
     'stmt : CONSOLE LPARENT optparams RPARENT'
     p[0] = ("console", p[3])
-def p_stmt_if_ef_el(p):
-    'stmt : IF exp compoundstmt ef el'
-    p[0] = ('if', p[2], p[3], p[4], p[5])
-def p_ef(p):
-    'ef : EF exp compoundstmt ef'
-    p[0] = [('ef', p[2], p[3])] + p[4]
-def p_ef_empty(p):
-    'ef : '
-    p[0] = []
-def p_stmt_el(p):
-    'el : EL compoundstmt'
-    p[0] = ('el', p[2])
-def p_stmd_el_empty(p):
-    'el : '
-    p[0] = []
+
 def p_stmt_assignment(p):
     'stmt : IDENTIFIER ASSIGN exp'
     p[0] = ('assign', p[1], p[3])

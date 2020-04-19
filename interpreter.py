@@ -27,6 +27,8 @@ class Interpreter:
     def env_declare(self, env, identifier, value):
         var_env = self.find_env(env, identifier)
         if var_env is None:
+            if value['type'] == 'char':
+                value['value'] = ord(value['value'])
             env[identifier] = value
         else:
             raise Exception('RedeclarationError')
@@ -36,11 +38,27 @@ class Interpreter:
         if var_env is None:
             raise Exception(f"Variable '{identifier}' not declared")
         else:
-            var_env[identifier] = value
+            if value['type'] == 'char':
+                value['value'] = ord(value['value'])
+            if var_env[identifier]['type'] == value['type']:
+                var_env[identifier]['value'] = value['value']
+            elif var_env[identifier]['type'] == 'bool' and value['type'] in ['char', 'int']:
+                if value['value'] == 0 or value['value'] == 1:
+                    var_env[identifier]['value'] = bool(value['value'])
+                else:
+                    raise Exception(f"TypeError: Can only set bool with 1,0, true, false")
+            elif var_env[identifier]['type'] == 'double' and value['type'] in ['char', 'int']:
+                var_env[identifier]['value'] = float(value['value'])
+            elif var_env[identifier]['type'] == 'int' and value['type'] in ['char']:
+                var_env[identifier]['value'] = int(value['value'])
+            else:
+                raise Exception(f"TypeError: Cannot set type '{var_env[identifier]['type']}' with type '{value['type']}'")
     def eval_compoundstmt(self, stmts, parentenv):
         env = {'parent': parentenv}
         for stmt in stmts:
-            self.eval_stmt(stmt, env)
+            nodetype = stmt[0]
+            if nodetype == 'stmt':
+                self.eval_stmt(stmt[1], env)
     def eval_stmt(self, tree, env):
         stmttype = tree[0]
         if stmttype == "console":
@@ -48,16 +66,21 @@ class Interpreter:
             print('CONSOLE-> ', end='')
             for exp in exps:
                 result = self.eval_exp(exp, env)
-                print(result['value'], end=' ')
+                representation = None
+                if result['type'] == 'char':
+                    representation = chr(result['value'])
+                else:
+                    representation = result['value']
+                print(representation, end=' ')
             print()
         elif stmttype == "init":
             identifier = tree[1]
             dtype = tree[2]
+            self.env_declare(env, identifier, {'value': self.DEFAULT[dtype], 'type': dtype})
             if tree[3] is not None:
                 result = self.eval_exp(tree[3], env)
-            else:
-                result = {'value': self.DEFAULT[dtype], 'type': dtype}
-            self.env_declare(env, identifier, result)
+                self.env_update(env, identifier, result)
+
         elif stmttype == "exp":
             result = self.eval_exp(tree[1], env)
         elif stmttype == "assign":
@@ -67,32 +90,112 @@ class Interpreter:
         elif stmttype == "if":
             condition_exp = self.eval_exp(tree[1], env)
             ef_stmts = tree[3]
-            if condition_exp:
+            if condition_exp['value']:
                 self.eval_compoundstmt(tree[2], env)
             else:
                 met = False
                 for ef_stmt in ef_stmts:
                     condition_exp = self.eval_exp(ef_stmt[1], env)
-                    if condition_exp:
+                    if condition_exp['value']:
                         self.eval_compoundstmt(ef_stmt[2], env)
                         met = True
                         break
-                if not met:
-                    el_stmts = tree[4]
+                if not met and tree[4]:
+                    el_stmts = tree[4][1]
                     self.eval_compoundstmt(el_stmts, env)
         
     def plus(self, x, y):
-        return {'value': x['value'] + y['value'], 'type': x['type']}
+        op = '+'
+        ls_type = x['type']
+        rs_type = y['type']
+        ls_val = x['value']
+        rs_val = y['value']
+        if ls_type == 'bool' or rs_type == 'bool':
+            raise Exception(f"Variables of type 'bool' cannot use operator '{op}'")
+        elif ls_type == rs_type:
+            return {'value': ls_val + rs_val, 'type': ls_type}
+        elif ls_type in ['int', 'double'] and rs_type in ['int', 'double']:
+            return {'value': ls_val + rs_val, 'type': 'double'}
+        else:
+            raise Exception(f"Variables of type '{ls_type}' and '{rs_type}' cannot use operator '{op}'")
     def minus(self, x, y):
-        return {'value': x['value'] - y['value'], 'type': x['type']}
+        op = '-'
+        ls_type = x['type']
+        rs_type = y['type']
+        ls_val = x['value']
+        rs_val = y['value']
+        if ls_type in ['bool', 'string'] or rs_type in ['bool', 'string']:
+            raise Exception(f"Variables of type 'bool' or 'string' cannot use operator '{op}'")
+        elif ls_type == rs_type:
+            return {'value': ls_val - rs_val, 'type': ls_type}
+        elif ls_type in ['int', 'double'] and rs_type in ['int', 'double']:
+            return {'value': ls_val - rs_val, 'type': 'double'}
+        else:
+            raise Exception(f"Variables of type '{ls_type}' and '{rs_type}' cannot use operator '{op}'")
     def multiply(self, x, y):
-        return {'value': x['value'] * y['value'], 'type': x['type']}
+        op = '*'
+        ls_type = x['type']
+        rs_type = y['type']
+        ls_val = x['value']
+        rs_val = y['value']
+        if ls_type in ['bool', 'string'] or rs_type in ['bool', 'string']:
+            raise Exception(f"Variables of type 'bool' or 'string' cannot use operator '{op}'")
+        elif ls_type == rs_type:
+            return {'value': ls_val * rs_val, 'type': ls_type}
+        elif ls_type in ['int', 'double'] and rs_type in ['int', 'double']:
+            return {'value': ls_val * rs_val, 'type': 'double'}
+        else:
+            raise Exception(f"Variables of type '{ls_type}' and '{rs_type}' cannot use operator '{op}'")
     def divide(self, x, y):
-        return {'value': x['value'] / y['value'], 'type': x['type']}
+        op = '/'
+        ls_type = x['type']
+        rs_type = y['type']
+        ls_val = x['value']
+        rs_val = y['value']
+        if ls_type in ['bool', 'string'] or rs_type in ['bool', 'string']:
+            raise Exception(f"Variables of type 'bool' or 'string' cannot use operator '{op}'")
+        elif ls_type == rs_type:
+            if ls_type == 'double':
+                return {'value': ls_val / rs_val, 'type': ls_type}
+            else:
+                return {'value': int(ls_val // rs_val), 'type': ls_type}
+        elif ls_type in ['int', 'double'] and rs_type in ['int', 'double']:
+            return {'value': ls_val / rs_val, 'type': 'double'}
+        else:
+            raise Exception(f"Variables of type '{ls_type}' and '{rs_type}' cannot use operator '{op}'")
     def mod(self, x, y):
-        return {'value': x['value'] % y['value'], 'type': x['type']}
+        op = '%'
+        ls_type = x['type']
+        rs_type = y['type']
+        ls_val = x['value']
+        rs_val = y['value']
+        if ls_type == 'int' and rs_type == 'int':
+            return {'value': int(ls_val % rs_val), 'type': ls_type}
+        elif ls_type in ['int', 'double'] and rs_type in ['int', 'double']:
+            return {'value': ls_val % rs_val, 'type': 'double'}
+        else:
+            raise Exception(f"Variables of type '{ls_type}' and '{rs_type}' cannot use operator '{op}'")
     def power(self, x, y):
-        return {'value': x['value'] ** y['value'], 'type': x['type']}
+        op = '^'
+        ls_type = x['type']
+        rs_type = y['type']
+        ls_val = x['value']
+        rs_val = y['value']
+        if ls_type == 'int' and rs_type == 'int':
+            return {'value': int(ls_val ** rs_val), 'type': ls_type}
+        elif ls_type in ['int', 'double'] and rs_type in ['int', 'double']:
+            return {'value': ls_val ** rs_val, 'type': 'double'}
+        else:
+            raise Exception(f"Variables of type '{ls_type}' and '{rs_type}' cannot use operator '{op}'")
+    def neg(self, x):
+        op = '-'
+        ls_type = x['type']
+        ls_val = x['value']
+        if ls_type in ['int', 'double']:
+            return {'value': -ls_val, 'type': ls_type}
+        else:
+            raise Exception(f"Variable of type '{ls_type}' cannot use operator '{op}'")
+
     def eval_exp(self, tree, env):
         nodetype = tree[0]
         result = None

@@ -38,7 +38,7 @@ tokens = (
     'DOT', # .
     'TYPE', # int, string, double, char, bool
     'IDENTIFIER', # variable name
-    'NEWLINE', # end of a line
+    'SEMICOLON', # end of a line
 )
 
 t_COMMA = r','
@@ -59,13 +59,13 @@ t_GT = r'>'
 t_EQ = r'=='
 t_NE = r'!='
 t_ASSIGN = r'='
+t_SEMICOLON = r';'
 
 t_ignore = ' \t\v\r' # whitespace
 
 def t_NEWLINE(t):
     r'\n'
     t.lexer.lineno += 1
-    return t
 def t_TYPE(t):
     r'int|string|bool|char|double'
     return t

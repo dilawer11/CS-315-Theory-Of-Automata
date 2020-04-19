@@ -9,16 +9,19 @@ def run(code="x+y\n1-2"):
     dalexer = lex.lex(module=tokenizer)
     daparser = yacc.yacc(module=parser)
     dainterpreter = Interpreter()
+    # code = "console(not true == (not (not d)) and (true != 0))"
     if code[-1]!='\n':
         code += '\n'
     dalexer.input(code)
-    #  # Tokenize
-    # while True:
-    #     tok = dalexer.token()
-    #     if not tok: 
-    #         break      # No more input
-    #     print(tok)
+     # Tokenize
+    while True:
+        tok = dalexer.token()
+        if not tok: 
+            break      # No more input
+        print(tok)
     parse_tree = daparser.parse(code, lexer=dalexer)
+    for t in parse_tree:
+        print(t)
     dainterpreter.interpret(trees=parse_tree)
 
 def main(filename, mode):

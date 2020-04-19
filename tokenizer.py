@@ -1,7 +1,11 @@
 import ply.lex as lex
 
 tokens = (
-    'INIT', # init
+    'INT', #int
+    'DOUBLE', #double
+    'CHAR', # char
+    'STRING', # string
+    'BOOL', # bool
     'CONSOLE', # console
     'COMMA', # ,
     'ASSIGN', # =
@@ -31,13 +35,10 @@ tokens = (
     'NOT', # not
     'AND', # and
     'OR', # or
-    'FALSE', # false
-    'TRUE', # true
-    'IDENTIFIER', # variable name
-    'STRING', # string variable
-    'NUMBER', # number variable
-    'NEWLINE', # end of a line
     'DOT', # .
+    'TYPE', # int, string, double, char, bool
+    'IDENTIFIER', # variable name
+    'NEWLINE', # end of a line
 )
 
 t_COMMA = r','
@@ -47,7 +48,6 @@ t_LPARENT = r'\('
 t_RPARENT = r'\)'
 t_LCURLY = r'\{'
 t_RCURLY = r'\}'
-t_DOT = r'\.'
 t_DIVIDE = r'/'
 t_MULTIPLY = r'\*'
 t_POWER = r'\^'
@@ -66,14 +66,11 @@ def t_NEWLINE(t):
     r'\n'
     t.lexer.lineno += 1
     return t
-def t_INIT(t):
-    r'init'
+def t_TYPE(t):
+    r'int|string|bool|char|double'
     return t
-def t_TRUE(t):
-    r'true'
-    return t
-def t_FALSE(t):
-    r'false'
+def t_BOOL(t):
+    r'true|false'
     return t
 def t_OR(t):
     r'or'
@@ -100,8 +97,11 @@ def t_IDENTIFIER(t):
     r'[a-zA-Z][a-zA-Z0-9|_]*'
     return t
 def t_STRING(t):
-    # r'"(?:[^?\\\n]|(?:\\.))*"'
     r'"[^"\n]*"'
+    t.value = t.value[1:-1]
+    return t
+def t_CHAR(t):
+    r"'\\?[^']'"
     t.value = t.value[1:-1]
     return t
 def t_PLUSPLUS(t):
@@ -116,10 +116,17 @@ def t_MINUS(token):
 def t_PLUS(token):
     r'\+'
     return token
-def t_NUMBER(token):
-    r'-?[0-9]+(?:\.[0-9]*)?'
+def t_DOUBLE(token):
+    r'\d+\.\d+'
     token.value = float(token.value)
     return token
+def t_INT(token):
+    r'\d+'
+    token.value = int(token.value)
+    return token
+def t_DOT(t):
+    r'\.'
+    return t
 def t_error(t):
     print ("DA Language Illegal Lexer: " + t.value[0])
     t.lexer.skip(1)

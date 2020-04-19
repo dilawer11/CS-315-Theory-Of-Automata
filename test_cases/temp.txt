@@ -1,0 +1,13 @@
+int y = 5;
+int x = 2;
+if (false) {
+    console(x + y);
+    if (true) {
+        console(x + y);
+    }
+} ef (true) {
+    console(x + x);
+}
+el {
+    console(y + x);
+}

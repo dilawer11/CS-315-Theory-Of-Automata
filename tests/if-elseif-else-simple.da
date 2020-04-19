@@ -1,0 +1,10 @@
+bool isRaining = false;
+bool isSnowing = true;
+bool temp = 0;
+if (isRaining == true) {
+    console("It is raining");
+} ef (isSnowing != true) {
+    console("It is snowing");
+} el {
+    console("No idea");
+};

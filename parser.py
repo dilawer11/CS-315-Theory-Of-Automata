@@ -2,7 +2,7 @@ import ply.yacc as yacc
 import sys
 from tokenizer import tokens
 
-start = 'da'
+start = 'namespace'
 
 precedence = (
     ('left', 'OR'),
@@ -15,28 +15,31 @@ precedence = (
     ('right', 'NOT'),
 )
 
-def p_da(p):
-    'da : element da'
+def p_namespace(p):
+    'namespace : element namespace'
     p[0] = [p[1]] + p[2]
-def p_da_empty(p):
-    'da : '
+def p_namespace_empty(p):
+    'namespace : '
     p[0] = []
 def p_element_statement(p):
     'element : stmt SEMICOLON'
     p[0] = ('stmt', p[1])
-def p_element_if_block(p):
-    'element : IF exp compoundstmt ef el'
-    p[0] = ('if', p[2], p[3], p[4], p[5])
+def p_element_if_ef_el(p):
+    'element : if ef el'
+    p[0] = ('if', [p[1]] + p[2], p[3])
+def p_if(p):
+    'if : IF exp compoundstmt'
+    p[0] = (p[2], p[3])
 def p_ef(p):
     'ef : EF exp compoundstmt ef'
-    p[0] = [('ef', p[2], p[3])] + p[4]
+    p[0] = [(p[2], p[3])] + p[4]
 def p_ef_empty(p):
     'ef : '
     p[0] = []
-def p_stmt_el(p):
+def p_el(p):
     'el : EL compoundstmt'
-    p[0] = ('el', p[2])
-def p_stmd_el_empty(p):
+    p[0] = p[2]
+def p_el_empty(p):
     'el : '
     p[0] = []
 def p_optparams(p):
@@ -52,7 +55,7 @@ def p_params_exp(p):
     'params : exp'
     p[0] = [ p[1] ]
 def p_compoundstmt(p):
-    'compoundstmt : LCURLY statements RCURLY'
+    'compoundstmt : LCURLY namespace RCURLY'
     p[0] = p[2]
 def p_statements(p):
     'statements : stmt SEMICOLON statements'

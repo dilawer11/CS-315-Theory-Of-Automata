@@ -4,12 +4,15 @@
 
 ### Syntax and Sample Program
 
-init x = "DA"
-init y = "Lang"
-init z = x + " " +y
-init p = true
+init x = "DA";
+init y = "Lang";
+init z = x + " " +y;
+init p = true;
 if p {
-    console(z)
+    console(z);
+    if (true) {
+        console("Isn't This Amazing");
+    }
 } el {
-    console("Hello World!")
+    console("Hello World!");
 }

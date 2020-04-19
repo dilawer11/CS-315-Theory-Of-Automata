@@ -1,4 +1,4 @@
-import tokenizer
+import lexer
 import parser
 import ply.lex as lex
 import ply.yacc as yacc
@@ -401,7 +401,7 @@ class Interpreter:
 
 
 def run(code, print_tokens=False, print_tree=False):
-    dalexer = lex.lex(module=tokenizer)
+    dalexer = lex.lex(module=lexer)
 
     # Tokenize
     dalexer.input(code)

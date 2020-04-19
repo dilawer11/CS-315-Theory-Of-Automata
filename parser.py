@@ -1,6 +1,6 @@
 import ply.yacc as yacc
 import sys
-from tokenizer import tokens
+from lexer import tokens
 
 start = 'namespace'
 

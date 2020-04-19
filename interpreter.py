@@ -1,3 +1,9 @@
+import tokenizer
+import parser
+import ply.lex as lex
+import ply.yacc as yacc
+import sys
+
 class Interpreter:
     DEFAULT = {
         'int': 0,
@@ -6,13 +12,13 @@ class Interpreter:
         'double': 0.0,
         'bool': False,
     }
-    def __init__(self, name="A Test Program"):
-        self.name = name
+    def __init__(self):
+        print("Welcome to my DA Lang Interpreter")
     def find_env(self, env, identifier):
         if identifier in env:
             return env
         elif 'parent' in env:
-            return find_env(env['parent'], identifier)
+            return self.find_env(env['parent'], identifier)
         else:
             return None
     # Lookup A Value of a Variable
@@ -53,17 +59,10 @@ class Interpreter:
                 var_env[identifier]['value'] = int(value['value'])
             else:
                 raise Exception(f"TypeError: Cannot set type '{var_env[identifier]['type']}' with type '{value['type']}'")
-    def eval_compoundstmt(self, stmts, parentenv):
-        env = {'parent': parentenv}
-        for stmt in stmts:
-            nodetype = stmt[0]
-            if nodetype == 'stmt':
-                self.eval_stmt(stmt[1], env)
     def eval_stmt(self, tree, env):
         stmttype = tree[0]
         if stmttype == "console":
             exps = tree[1]
-            print('CONSOLE-> ', end='')
             for exp in exps:
                 result = self.eval_exp(exp, env)
                 representation = None
@@ -87,22 +86,8 @@ class Interpreter:
             identifier = tree[1]
             result = self.eval_exp(tree[2], env)
             self.env_update(env, identifier, result)
-        elif stmttype == "if":
-            condition_exp = self.eval_exp(tree[1], env)
-            ef_stmts = tree[3]
-            if condition_exp['value']:
-                self.eval_compoundstmt(tree[2], env)
-            else:
-                met = False
-                for ef_stmt in ef_stmts:
-                    condition_exp = self.eval_exp(ef_stmt[1], env)
-                    if condition_exp['value']:
-                        self.eval_compoundstmt(ef_stmt[2], env)
-                        met = True
-                        break
-                if not met and tree[4]:
-                    el_stmts = tree[4][1]
-                    self.eval_compoundstmt(el_stmts, env)
+        else:
+            raise Exception(f"Unknown Statement Type in eval_stmt: {stmttype}")
         
     def plus(self, x, y):
         op = '+'
@@ -308,18 +293,77 @@ class Interpreter:
             rs = self.eval_exp(tree[2], env)
             result = {'value': ls['value'] == rs['value'], 'type': 'bool'}
         return result
-    def interpret(self, trees):
-        global_env = {}
-        try:
-            for tree in trees:
-                nodetype = tree[0]
-                if nodetype == "stmt":
-                    self.eval_stmt(tree[1], global_env)
-                else:
-                    print(f"Unknown node type : {nodetype}")
-        except Exception as e:
-            print()
-            print(e.with_traceback(e.__traceback__))
+    def interpretNameSpace(self, trees, parentenv):
+        env = {}
+        if parentenv is not None:
+            env['parent'] = parentenv
 
-#TODO char -> ord -> chr
-#TODO Strict Type Checking
+        for tree in trees:
+            nodetype = tree[0]
+            if nodetype == "stmt":
+                self.eval_stmt(tree[1], env)
+            elif nodetype == "if":
+                if_namespaces = tree[1]
+                el_namespace = tree[2]
+                met = False
+                for if_namespace in if_namespaces:
+                    condition_exp = if_namespace[0]
+                    namespace = if_namespace[1]
+                    result = self.eval_exp(condition_exp, env)
+                    if result['value']:
+                        met = True
+                        self.interpretNameSpace(namespace, env)
+                        break
+                if not met:
+                    self.interpretNameSpace(el_namespace, env)
+            else:
+                print(f"Unknown node type : {nodetype}")
+    def interpret(self, trees):
+        try:
+            print("OUTPUT:")
+            self.interpretNameSpace(trees, None)
+        except Exception as e:
+            print(e)
+
+
+def run(code, print_tokens=False, print_tree=False):
+    dalexer = lex.lex(module=tokenizer)
+
+    # Tokenize
+    dalexer.input(code)
+    if print_tokens:
+        while True:
+            tok = dalexer.token()
+            if not tok: 
+                break
+            print(tok)
+    
+    # Parse
+    daparser = yacc.yacc(module=parser)
+    parse_tree = daparser.parse(code, lexer=dalexer)
+    if print_tree:
+        for t in parse_tree:
+            print(t)
+    
+    # Interprets
+    dainterpreter = Interpreter()
+    dainterpreter.interpret(trees=parse_tree)
+
+def main(filename, mode):
+    with open(filename, 'r') as f:
+        data = f.read()
+    run(data)
+if __name__ == "__main__":
+    # You can compile the program using python3 compiler.py [FILENAME] [OPTIONS]
+    # FILENAME is the Code file for the language
+    # OPTIONS can be one of [t, p, c] where 't' is for tokens, 'p' is for parse tree, 'c' is for compile [Default: c]
+    if len(sys.argv) == 2:
+        mode = 'c'
+        filename = sys.argv[1]
+        main(filename, mode)
+    elif len(sys.argv) == 3:
+        mode = sys.argv[2]
+        filename = sys.argv[1]
+        main(filename, mode)
+    else:
+        print('No Code File Specified. Exiting...')

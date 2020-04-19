@@ -46,25 +46,22 @@ def p_optline_empty(p):
     p[0] = []
 def p_statements(p):
     'statements : optline stmt NEWLINE statements'
-    p[0] = [ p[2] ]  + p[4]
+    p[0] = [ ("stmt",p[2]) ]  + p[4]
 def p_statements_empty(p):
     'statements : '
     p[0] = []
 def p_stmt_console(p):
     'stmt : CONSOLE LPARENT optparams RPARENT'
     p[0] = ("console", p[3])
-def p_stmt_if(p):
-    'stmt : IF exp compoundstmt'
-    p[0] = ('if', p[2], p[3])
-def p_stmt_if_ef(p):
+def p_stmt_if_ef_el(p):
     'stmt : IF exp compoundstmt ef el'
     p[0] = ('if', p[2], p[3], p[4], p[5])
-def p_ef_empty(p):
-    'ef : '
-    p[0] = []
 def p_ef(p):
     'ef : EF exp compoundstmt ef'
     p[0] = [('ef', p[2], p[3])] + p[4]
+def p_ef_empty(p):
+    'ef : '
+    p[0] = []
 def p_stmt_el(p):
     'el : EL compoundstmt'
     p[0] = ('el', p[2])
@@ -74,11 +71,14 @@ def p_stmd_el_empty(p):
 def p_stmt_assignment(p):
     'stmt : IDENTIFIER ASSIGN exp'
     p[0] = ('assign', p[1], p[3])
-def p_stmt_init(p):
-    'stmt : INIT IDENTIFIER ASSIGN exp'
-    p[0] = ('init', p[2], p[4])
+def p_stmt_init_empty(p):
+    'stmt : TYPE IDENTIFIER'
+    p[0] = ('init', p[2], p[1], None)
+def p_stmt_init_assign(p):
+    'stmt : TYPE IDENTIFIER ASSIGN exp'
+    p[0] = ('init', p[2], p[1], p[4])
 def p_stmt_init_list(p):
-    'stmt : INIT IDENTIFIER EQ LSQBRACE optparams RSQBRACE'
+    'stmt : TYPE IDENTIFIER ASSIGN LSQBRACE optparams RSQBRACE'
 # Expressions
 def p_stmt_exp(p):
     'stmt : exp'
@@ -89,12 +89,25 @@ def p_exp_parent(p):
 def p_exp_identifier(p):
     'exp : IDENTIFIER'
     p[0] = ("identifier",p[1])
-def p_exp_number(p):
-    'exp : NUMBER'
-    p[0] = ("number", p[1])
+
+# Types
 def p_exp_string(p):
     'exp : STRING'
     p[0] = ("string", p[1])
+def p_exp_bool(p):
+    'exp : BOOL'
+    p[0] = ("bool", p[1])
+def p_exp_int(p):
+    'exp : INT'
+    p[0] = ("int", p[1])
+def p_exp_double(p):
+    'exp : DOUBLE'
+    p[0] = ("double", p[1])
+def p_exp_char(p):
+    'exp : CHAR'
+    p[0] = ("char", p[1])
+
+# Arithimetic Ops
 def p_exp_postfix_plusplus(p):
     'exp : IDENTIFIER PLUSPLUS'
     p[0] = ("post-plusplus", p[1])
@@ -128,12 +141,6 @@ def p_exp_and(p):
 def p_exp_or(p):
     'exp : exp OR exp'
     p[0] = ("or", p[1], p[3])
-def p_exp_true(p):
-    'exp : TRUE'
-    p[0] = ("bool", "true")
-def p_exp_false(p):
-    'exp : FALSE'
-    p[0] = ("bool", "false")
 def p_exp_lt(p):
     'exp : exp LT exp'
     p[0] = ('LT', p[1], p[3])

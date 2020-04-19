@@ -3,8 +3,9 @@ import os
 tests = [
     {'exp_output': "STANDARD OUTPUT\n5.4 True 2", 'test_name': 'standard_output'},
     {'exp_output': "start\n1 2.5\nFalse 0\nend\nRedeclarationError", 'test_name': 'variables'},
-    {'exp_output':"theoryofautomata\n3.5\n11.0\n0.25\nTrue\nVariables of type 'int' and 'string' cannot use operator '+'", 'test_name': 'expressions'},
-    {'exp_output': 'Wear down jacket', 'test_name': 'if_else'}
+    {'exp_output':"theoryofautomata\n0.25\nTrue\nVariables of type 'int' and 'string' cannot use operator '+'", 'test_name': 'expressions'},
+    {'exp_output': 'Wear down jacket', 'test_name': 'if_else'},
+    {'exp_output': '[]\n[1, 2]\nDone!\nWell Get Ready!\nList Index Out of Bounds', 'test_name': 'list'}
 ]
 def match(output, exp_output):
     output_split = output.split('\n')

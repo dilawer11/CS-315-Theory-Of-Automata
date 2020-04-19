@@ -1,0 +1,2 @@
+console("STANDARD OUTPUT")
+console(5.4, true, 2)
